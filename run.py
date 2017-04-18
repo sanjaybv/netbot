@@ -3,9 +3,11 @@
 import sys
 import logging
 import logging.config
+
 from slackbot import settings
 from slackbot.bot import Bot
 
+import wit_actions
 
 def main():
     kw = {
@@ -15,8 +17,16 @@ def main():
         'stream': sys.stdout,
     }
     logging.basicConfig(**kw)
-    logging.getLogger('requests.packages.urllib3.connectionpool').setLevel(logging.WARNING)
+    logging.getLogger('requests.packages.urllib3.connectionpool')\
+            .setLevel(logging.WARNING)
+
     bot = Bot()
+
+    @wit_actions.register
+    def send(message):
+        if bot._client:
+            bot._client.send_message(channel='general', message=message)
+
     bot.run()
 
 if __name__ == '__main__':
