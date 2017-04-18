@@ -8,11 +8,11 @@ def send(request, response):
     if send_func:
         send_func(response['text'])
 
-def first_entity_value(entities, entity):
+def first_entity(entities, entity, attribute):
     if entity not in entities:
         return None
 
-    val = entities[entity][0]['value']
+    val = entities[entity][0][attribute]
     if not val:
         return None
 
@@ -25,7 +25,16 @@ def greet(request):
     print 'context:', context 
     print 'entities:', entities 
 
-    context['name'] = 'Nameless'
+    if entities['intent'] and \
+        first_entity(entities, 'intent', 'value') == 'greeting':
+        print 'intent greeting'
+        if entities['contact'] and \
+                first_entity(entities, 'contact', 'confidence') > 0.8:
+            context['name'] = first_entity(entities, 'contact', 'value')
+            context.pop('missingName', None)
+        else:
+            context['missingName'] = True
+            context.pop('name', None)
 
     print 'return context:', context 
     return context
