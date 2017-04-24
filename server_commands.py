@@ -1,9 +1,12 @@
 import os
+from os import system as system_call
 
 import paramiko
 
 hosts = [
-        'pascal.cs.rutgers.edu'
+        'pascal.cs.rutgers.edu',
+        'top.cs.rutgers.edu',
+        'prolog.cs.rutgers.edu',
         ]
 
 class SSH(object):
@@ -25,6 +28,15 @@ class SSH(object):
 
     def close(self):
         self._client.close()
+
+def get_hosts_status():
+    statuses = []
+    for host in hosts:
+        statuses.append((host, "online" if ping(host) else "offline"))
+    return statuses
+
+def ping(host):
+    return system_call("ping -c 1 " + host) == 0
 
 def main():
 

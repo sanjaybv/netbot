@@ -1,3 +1,5 @@
+import server_commands as sc
+
 send_func = None
 
 def register(func):
@@ -25,9 +27,8 @@ def greet(request):
     print 'context:', context 
     print 'entities:', entities 
 
-    if entities['intent'] and \
+    if entities.get('intent') and \
         first_entity(entities, 'intent', 'value') == 'greeting':
-        print 'intent greeting'
         if entities['contact'] and \
                 first_entity(entities, 'contact', 'confidence') > 0.8:
             context['name'] = first_entity(entities, 'contact', 'value')
@@ -39,7 +40,24 @@ def greet(request):
     print 'return context:', context 
     return context
 
+def hosts_status(request):
+    context = request['context']
+    entities = request['entities']
+
+    print 'context:', context 
+    print 'entities:', entities 
+
+    if entities.get('intent') and \
+        first_entity(entities, 'intent', 'value') == 'hosts_status':
+        statuses = sc.get_hosts_status()
+        print statuses 
+        context['hosts_status'] = r'\n'.join([(h + ' ' + s) for h, s in statuses])
+
+    print 'return context:', context 
+    return context
+
 actions = {
         'send': send,
         'greet': greet,
+        'hosts_status': hosts_status
         }
