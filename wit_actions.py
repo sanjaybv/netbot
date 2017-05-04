@@ -25,11 +25,11 @@ def greet(request):
     entities = request['entities']
 
     print 'context:', context 
-    print 'entities:', entities 
+    print 'entities:', type(entities)
 
-    if entities.get('intent') and \
-        first_entity(entities, 'intent', 'value') == 'greeting':
-        if entities['contact'] and \
+    if entities.get('intent') \
+        and first_entity(entities, 'intent', 'value') == 'greeting':
+        if entities.get('contact') and \
                 first_entity(entities, 'contact', 'confidence') > 0.8:
             context['name'] = first_entity(entities, 'contact', 'value')
             context.pop('missingName', None)
@@ -47,11 +47,12 @@ def hosts_status(request):
     print 'context:', context 
     print 'entities:', entities 
 
-    if entities.get('intent') and \
-        first_entity(entities, 'intent', 'value') == 'hosts_status':
+    if entities.get('intent') \
+        and first_entity(entities, 'intent', 'value') == 'hosts_status':
         statuses = sc.get_hosts_status()
         print statuses 
-        context['hosts_status'] = r'\n'.join([(h + ' ' + s) for h, s in statuses])
+        context['hosts_status'] = '\n' + '\n'.join(
+                [(h + ' - ' + s) for h, s in statuses])
 
     print 'return context:', context 
     return context
