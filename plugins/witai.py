@@ -1,4 +1,6 @@
 import os
+import random
+import string
 
 from slackbot.bot import respond_to
 from slackbot.bot import listen_to
@@ -11,9 +13,18 @@ wit_client = Wit(
         actions=actions
         )
 
+wit_context = {}
+
+def random_word(length):
+   return ''.join(random.choice(string.lowercase) for i in range(length))
+
 @respond_to('')
 def wit(message):
-    message.react('+1')
-    message.reply('You said: ' + message.body['text'])
+    global wit_context
 
-    wit_client.run_actions('asdf', message.body['text'])
+    message.react('+1')
+
+    wit_context = wit_client.run_actions(
+                    random_word(10), 
+                    message.body['text'], 
+                    wit_context)
