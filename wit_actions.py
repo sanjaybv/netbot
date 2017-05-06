@@ -118,6 +118,7 @@ def deploy(request):
     if deploy_error != None:
         context['deployError'] = deploy_error
         print 'return context:', context 
+        print '<<<<<<<<\n'
         return context 
 
 
