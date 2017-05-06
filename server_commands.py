@@ -88,9 +88,9 @@ def check_github_repo(repo_url):
     
     r = requests.get(url)
     if len(r.json()) == 2:
-        return True
-    else:
         return False
+    else:
+        return True
 
 def get_service_status(repo_url, server_name):
     if ~ping(server_name):
@@ -101,7 +101,6 @@ def get_service_status(repo_url, server_name):
 
 
 def main():
-
     ssh = SSH()
     print ssh.execute('ls')
     ssh.close()
