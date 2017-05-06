@@ -25,6 +25,12 @@ class SSH(object):
                 username=self._username, 
                 password=self._password)
 
+    def execute_exit_status(self, command):
+        chan = self._client.get_transport().open_session()
+        chan.exec_command(self._pre_command + command)
+        
+        return chan.recv_exit_status(), chan.recv_stderr(1e100)
+
     def execute(self, command, need_output=True):
         ssh_stdin, ssh_stdout, ssh_stderr = self._client.exec_command(
                             self._pre_command + command)
@@ -69,10 +75,10 @@ def deploy(repo_url, server_name):
 
     # run go get command
     cmd = 'go get -u {0}'.format(repo_url)
-    out, err = ssh_client.execute(cmd)
-    if err != '':
+    exit_status = ssh_client.execute_exit_status(cmd)
+    if exit_status != 0:
         ssh_client.close()
-        return err
+        return 'go get error: exit_status = {0}'.format(exit_status)
 
     # create log folder
     log_path = '~/.netbot/' + repo_url
