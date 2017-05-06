@@ -18,6 +18,8 @@ wit_context = {}
 def random_word(length):
    return ''.join(random.choice(string.lowercase) for i in range(length))
 
+session_id = random_word(10)
+
 @respond_to('')
 def wit(message):
     global wit_context
@@ -25,6 +27,6 @@ def wit(message):
     message.react('+1')
 
     wit_context = wit_client.run_actions(
-                    random_word(10), 
+                    session_id, 
                     message.body['text'], 
                     wit_context)
