@@ -58,6 +58,10 @@ def deploy(repo_url, server_name):
     5. Run repo name
     '''
 
+    # validate github repo
+    if not check_github_repo(repo_url):
+        return "GitHub repo does not exist"
+
     # validate server_name
     if not any([server_name in x for x in hosts]):
         return "Server name does not exist"
@@ -133,7 +137,7 @@ def check_github_repo(repo_url):
 
     url = list(repo_url.partition('github.com'))
 
-    url[0] = url[0] + 'api.'
+    url[0] = 'https://' + url[0] + 'api.'
     url[2] = '/repos' + url[2]
 
     url = url[0] + url[1] + url[2]
@@ -141,9 +145,9 @@ def check_github_repo(repo_url):
     
     r = requests.get(url)
     if len(r.json()) == 2:
-        return True
-    else:
         return False
+    else:
+        return True
 
 def get_service_status(repo_url, server_name):
     if ~ping(server_name):
