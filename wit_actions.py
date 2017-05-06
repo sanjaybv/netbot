@@ -39,10 +39,7 @@ def greet(request):
     action = correct_action(context, entities, 'greeting')
     if action:
         return action(request)
-    '''
-    if entities.get('intent') \
-        and first_entity(entities, 'intent', 'value') == 'greeting':
-    '''
+
     if entities.get('contact') and \
             first_entity(entities, 'contact', 'confidence') > 0.8:
         context['name'] = first_entity(entities, 'contact', 'value')
@@ -52,7 +49,7 @@ def greet(request):
         context.pop('name', None)
 
     print 'return context:', context 
-    print '<<<<<<<<'
+    print '<<<<<<<\n'
     return context
 
 def hosts_status(request):
@@ -66,17 +63,14 @@ def hosts_status(request):
     action = correct_action(context, entities, 'hosts_status')
     if action:
         return action(request)
-    '''
-    if entities.get('intent') \
-        and first_entity(entities, 'intent', 'value') == 'hosts_status':
-    '''
+
     statuses = sc.get_hosts_status()
     print statuses 
     context['hosts_status'] = '\n' + '\n'.join(
             [(h + ' - ' + s) for h, s in statuses])
 
     print 'return context:', context 
-    print '<<<<<<<<'
+    print '<<<<<<<<\n'
     return context
 
 def deploy(request):
@@ -98,6 +92,7 @@ def deploy(request):
             and first_entity(entities, 'url', 'domain') == 'github.com'):
             context['missingUrl'] = 'True'
             print 'mu return context:', context 
+            print '<<<<<<<<\n'
             return context
         context.pop('missingUrl', None)
         context['url'] = first_entity(entities, 'url', 'value').split('|')[0]
@@ -108,6 +103,7 @@ def deploy(request):
                 and first_entity(entities, 'server_name', 'confidence') > 0.8):
             context['missingServerName'] = 'True'
             print 'msn return context:', context 
+            print '<<<<<<<<\n'
             return context
         context.pop('missingServerName', None)
         context['server_name'] = first_entity(entities, 'server_name', 'value')
@@ -129,7 +125,7 @@ def deploy(request):
     context.pop('server_name')
 
     print 'return context:', context 
-    print '<<<<<<<<'
+    print '<<<<<<<<\n'
     return context
 
 def end_conversation(request):
@@ -143,7 +139,7 @@ def end_conversation(request):
     context = {}
 
     print 'return context:', context 
-    print '<<<<<<<<'
+    print '<<<<<<<<\n'
     return context
 
 actions = {
