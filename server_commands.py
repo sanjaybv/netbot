@@ -74,6 +74,9 @@ def get_hosts_status():
 def ping(host):
     return system_call("ping -c 1 " + host) == 0
 
+def get_service_status():
+    pass
+
 def main():
 
     ssh = SSH()

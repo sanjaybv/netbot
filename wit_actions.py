@@ -128,6 +128,9 @@ def deploy(request):
     print '<<<<<<<<\n'
     return context
 
+def get_service_status(request):
+    pass
+
 def end_conversation(request):
     context = request['context']
     entities = request['entities']
