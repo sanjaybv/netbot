@@ -95,7 +95,8 @@ def deploy(request):
             print '<<<<<<<<\n'
             return context
         context.pop('missingUrl', None)
-        context['url'] = first_entity(entities, 'url', 'value').split('|')[0]
+        context['url'] = first_entity(
+                entities, 'url', 'value').split('|')[1][:-1]
 
     # check for a server name
     if not context.get('server_name'):
@@ -117,6 +118,7 @@ def deploy(request):
     if deploy_error != None:
         context['deployError'] = deploy_error
         print 'return context:', context 
+        print '<<<<<<<<\n'
         return context 
 
 

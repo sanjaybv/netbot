@@ -11,12 +11,15 @@ hosts = [
         'prolog.cs.rutgers.edu',
         ]
 
+services = []
+
 class SSH(object):
     def __init__(self, host=hosts[0]):
         self._host = host
         self._client = paramiko.SSHClient()
         self._username = 'sv453'
         self._password = os.environ['SSH_PASSWORD']
+        self._pre_command = '. ~/.profile;'
 
         self._client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self._client.connect(
@@ -24,9 +27,21 @@ class SSH(object):
                 username=self._username, 
                 password=self._password)
 
-    def execute(self, command):
-        ssh_stdin, ssh_stdout, ssh_stderr = self._client.exec_command('ls')
-        return ssh_stdout.read(), ssh_stderr.read()
+    def execute_exit_status(self, command):
+        chan = self._client.get_transport().open_session()
+        chan.exec_command(self._pre_command + command)
+        
+        return chan.recv_exit_status(), chan.recv_stderr(1e100)
+
+    def execute(self, command, need_output=True):
+        ssh_stdin, ssh_stdout, ssh_stderr = self._client.exec_command(
+                            self._pre_command + command)
+        print '$ {0}'.format(command)
+        if need_output:
+            out, err = ssh_stdout.read(), ssh_stderr.read()
+            print '{0} \n--\n {1}'.format(command, out, err)
+            return out, err
+        return None, None
 
     def close(self):
         self._client.close()
@@ -43,6 +58,10 @@ def deploy(repo_url, server_name):
     5. Run repo name
     '''
 
+    # validate github repo
+    if not check_github_repo(repo_url):
+        return "GitHub repo does not exist"
+
     # validate server_name
     if not any([server_name in x for x in hosts]):
         return "Server name does not exist"
@@ -58,13 +77,51 @@ def deploy(repo_url, server_name):
         return "Server does not exist"
 
     # ssh to server
-    ssh_client = SSH(server_url)
+    ssh_client = SSH(host=server_url)
 
     # run go get command
-    out, err = ssh_client.execute("go get " + repo_url)
+    cmd = 'go get -u {0}'.format(repo_url)
+    exit_status = ssh_client.execute_exit_status(cmd)
+    if exit_status != 0:
+        ssh_client.close()
+        return 'go get error: exit_status = {0}'.format(exit_status)
+
+    # create log folder
+    log_path = '~/.netbot/' + repo_url
+    cmd = 'mkdir -p ' + log_path
+    out, err = ssh_client.execute(cmd)
     if err != '':
+        ssh_client.close()
         return err
 
+    # extract service name and run
+    service_name = repo_url.split('/')[-1]
+    cmd = '{0} > {1}/output.txt 2> {1}/error.txt &'.format(service_name, log_path)
+    out, err = ssh_client.execute(cmd)
+    if err != '':
+        ssh_client.close()
+        return err
+
+    # get process id
+    cmd = 'pgrep ' + service_name
+    out, err = ssh_client.execute(cmd)
+    if err != '':
+        ssh_client.close()
+        return err
+    try:
+        process_id = int(out.strip())
+    except Exception as e:
+        return 'Error getting process ID'
+
+    # add to services
+    services.append({
+        'repo_url': repo_url,
+        'server_name': server_name,
+        'process_id': process_id,
+        'log_path': log_path,
+        })
+
+    ssh_client.close()
     return None
 
 def get_hosts_status():
@@ -80,7 +137,7 @@ def check_github_repo(repo_url):
 
     url = list(repo_url.partition('github.com'))
 
-    url[0] = url[0] + 'api.'
+    url[0] = 'https://' + url[0] + 'api.'
     url[2] = '/repos' + url[2]
 
     url = url[0] + url[1] + url[2]
