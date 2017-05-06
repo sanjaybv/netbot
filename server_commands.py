@@ -3,6 +3,7 @@ from os import system as system_call
 
 import paramiko
 import urllib2
+import requests
 
 hosts = [
         'pascal.cs.rutgers.edu',
@@ -129,22 +130,26 @@ def ping(host):
     return system_call("ping -c 1 " + host) == 0
 
 def check_github_repo(repo_url):
-    url_parts = repo_url.partition('.github')
-    url_parts[0] = url_parts[0] + 'api'
-    url =  url_parts[0] + url_parts[1] + url_parts[2]
-    req = urllib2.Request(url, {'Content-Type': 'application/json'})
-    f = urllib2.urlopen(req)
-    if 'message' in f:
-        return False
-    else:
+
+    url = list(repo_url.partition('github.com'))
+
+    url[0] = url[0] + 'api.'
+    url[2] = '/repos' + url[2]
+
+    url = url[0] + url[1] + url[2]
+
+    
+    r = requests.get(url)
+    if len(r.json()) == 2:
         return True
+    else:
+        return False
 
 def get_service_status(repo_url, server_name):
     if ~ping(server_name):
         return "There's no server with that name"
 
-    val = check_github_repo(repo_url)
-    if val != 0:
+    if not check_github_repo(repo_url):
         return "Github URL does not exist"
 
 
