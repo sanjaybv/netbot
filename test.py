@@ -5,7 +5,7 @@ string = "https://github.com/sanjaybv/netbot-hell"
 
 str1 = list(string.partition('github.com'))
 
-str1[0] = str1[0] + 'api.'
+str1[0] = 'https://' + str1[0] + 'api.'
 str1[2] = '/repos' + str1[2]
 
 string = str1[0] + str1[1] + str1[2]
@@ -19,4 +19,5 @@ import requests
 r = requests.get(string)
 print type(r), len(r.json())
 
-if len(r.json())
+if len(r.json()) == 2 :
+	print 'invalid URL'

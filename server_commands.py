@@ -141,7 +141,6 @@ def check_github_repo(repo_url):
     url[2] = '/repos' + url[2]
 
     url = url[0] + url[1] + url[2]
-
     
     r = requests.get(url)
     if len(r.json()) == 2:
