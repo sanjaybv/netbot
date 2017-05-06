@@ -129,6 +129,21 @@ def deploy(request):
     return context
 
 def get_service_status(request):
+    context = request['context']
+    entities = request['entities']
+
+    print '>>>>>>>> get_service_status()'
+    print 'context:', context 
+    print 'entities:', entities
+
+    action = correct_action(context, entities, 'service_status')
+    if action:
+        return action(request)
+    
+    print 'return context:', context 
+    print '<<<<<<<<\n'
+    return context
+
     pass
 
 def end_conversation(request):
@@ -151,6 +166,7 @@ actions = {
         'hosts_status': hosts_status,
         'deploy': deploy,
         'end_conversation': end_conversation,
+        'service_status': get_service_status
         }
 
 intent_actions = {
