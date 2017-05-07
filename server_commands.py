@@ -158,18 +158,33 @@ def check_pid(pid):
         return True
 
 def get_service_status(repo_url, server_name):
-    if not ping(server_name):
-        return "There's no server with that name"
 
-    if not check_github_repo(repo_url):
-        return "Github URL does not exist"
+	for host in hosts:
+		if server_name in host:
+			server_url = host
+			break
 
-    for ser in services:
-    	if ser['repo_url'] == repo_url and ser['server_name'] == server_name:
-    		if check_pid(ser['process_id']):
-    			return "Service is still running on {1}".format(server_name)
-    		else:
-    			return "Service is done executing"
+	if not ping(server_url):
+		return "There's no server with that name"
+
+	if not check_github_repo(repo_url):
+		return "Github URL does not exist"
+
+	ssh_client = SSH(host=server_url)
+
+	for ser in services:
+		if ser['repo_url'] == repo_url and ser['server_name'] == server_name:
+			cmd = 'ps -p {1}'.format(ser['process_id'])
+			exit_status = ssh_client.execute_exit_status(cmd)
+			if exit_status != 0:
+				ssh_client.close()
+				return 'Service with process_id {0} is done executing'.format(ser['process_id'])
+			else:
+				return "Service with process_id {0} is still running on {1}".format(ser['process_id'], server_name)
+			# if check_pid(ser['process_id']):
+				# 	return "Service is still running on {1}".format(server_name)
+			# else:
+				# 	return "Service is done executing"
     		
 def main():
     ssh = SSH()
