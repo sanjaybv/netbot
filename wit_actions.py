@@ -166,8 +166,9 @@ def get_service_status(request):
         context.pop('serviceStatusMissingServerName', None)
         context['server_name'] = first_entity(entities, 'server_name', 'value')
 
-    serviceStatus = sc.get_service_status(context.get('url'), context.get('server_name'))
+
     
+    serviceStatus = sc.get_service_status(context.get('url'), context.get('server_name'))    
     if serviceStatus != None:
         context['serviceStatus'] = serviceStatus
         print 'return context:', context 
