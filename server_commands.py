@@ -18,7 +18,8 @@ class SSH(object):
         self._host = host
         self._client = paramiko.SSHClient()
         self._username = 'sv453'
-        self._password = os.environ['SSH_PASSWORD']
+        # self._password = os.environ['SSH_PASSWORD']
+        self._password = 'S@nju123456'
         self._pre_command = '. ~/.profile;'
 
         self._client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -159,6 +160,7 @@ def check_pid(pid):
 
 def get_service_status(repo_url, server_name):
 
+	error_file_out = ""
 	for host in hosts:
 		if server_name in host:
 			server_url = host
@@ -174,18 +176,42 @@ def get_service_status(repo_url, server_name):
 
 	for ser in services:
 		if ser['repo_url'] == repo_url and ser['server_name'] == server_name:
-			cmd = 'ps -p {1}'.format(ser['process_id'])
-			exit_status = ssh_client.execute_exit_status(cmd)
-			if exit_status != 0:
-				ssh_client.close()
-				return 'Service with process_id {0} is done executing'.format(ser['process_id'])
+
+			# get contents of error.txt
+			error_file_path = ser['log_path'] + '/error.txt'
+			cmd = 'ls -s {0}'.format(error_file_path)
+			stdout, stderr = ssh_client.execute(cmd)
+			
+			so = list(stdout.partition())
+			if so[0] == '0':
+				flag = 1
 			else:
+				flag = 0
+				cmd = 'cat {0}'.format(error_file_path)
+				error_file_out, error_file_err = ssh_client.execute(cmd)	
+			# 	ssh_client.close()
+			# 	return 'cat error: exit_status = {0}'.format(exit_status)
+			# else:
+			# 	return 'cat error: exit_status = {0}'.format(exit_status)
+
+			cmd = 'ps -p {0}'.format(ser['process_id'])
+			exit_status = ssh_client.execute_exit_status(cmd)
+			if exit_status != 0 and flag == 1:
+				# ssh_client.close()
+				return 'Service with process_id {0} is done executing'.format(ser['process_id'])
+			elif exit_status != 0 and flag == 0:
+				return 'Service with process_id {0} is done executing. Errors found : {1}'.format(ser['process_id'], error_file_out)
+			elif exit_status == 0 and flag == 1:
 				return "Service with process_id {0} is still running on {1}".format(ser['process_id'], server_name)
+			else:
+				return "Service with process_id {0} stopped with errors : {1}".format(ser['process_id'], error_file_out)
 			# if check_pid(ser['process_id']):
 				# 	return "Service is still running on {1}".format(server_name)
 			# else:
 				# 	return "Service is done executing"
     		
+    		ssh_client.close()
+
 def main():
     ssh = SSH()
     print ssh.execute('ls')

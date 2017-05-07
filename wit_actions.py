@@ -176,9 +176,9 @@ def get_service_status(request):
         return context 
 
 
-    context[''] = 'True'
-    context.pop('url')
-    context.pop('server_name')
+    # context[''] = 'True'
+    # context.pop('url')
+    # context.pop('server_name')
     
     print 'return context:', context 
     print '<<<<<<<<\n'
