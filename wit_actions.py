@@ -66,8 +66,7 @@ def hosts_status(request):
 
     statuses = sc.get_hosts_status()
     print statuses 
-    context['hosts_status'] = '\n' + '\n'.join(
-            [(h + ' - ' + s) for h, s in statuses])
+    context['hosts_status'] = statuses
 
     print 'return context:', context 
     print '<<<<<<<<\n'

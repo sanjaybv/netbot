@@ -9,6 +9,8 @@ hosts = [
         'pascal.cs.rutgers.edu',
         'top.cs.rutgers.edu',
         'prolog.cs.rutgers.edu',
+        'notexists.cs.rutgers.edu',
+        'sanjaybv.github.com',
         ]
 
 services = []
@@ -24,6 +26,7 @@ class SSH(object):
         self._client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self._client.connect(
                 self._host, 
+                timeout=2.0,
                 username=self._username, 
                 password=self._password)
 
@@ -74,10 +77,14 @@ def deploy(repo_url, server_name):
 
     # ping to check if host is alive
     if not ping(server_url):
-        return "Server does not exist"
+        return "That server does not exist." + \
+            " Here is the status of the servers." + get_hosts_status()
 
     # ssh to server
-    ssh_client = SSH(host=server_url)
+    try:
+        ssh_client = SSH(host=server_url)
+    except Exception as e:
+        return "There was a problem while contacting the server.\n" + str(e)
 
     # run go get command
     cmd = 'go get -u {0}'.format(repo_url)
@@ -128,7 +135,9 @@ def get_hosts_status():
     statuses = []
     for host in hosts:
         statuses.append((host, "online" if ping(host) else "offline"))
-    return statuses
+
+    status = '\n' + '\n'.join([(h + ' - ' + s) for h, s in statuses])
+    return status
 
 def ping(host):
     return system_call("ping -c 1 " + host) == 0
