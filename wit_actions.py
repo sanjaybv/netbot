@@ -113,9 +113,14 @@ def deploy(request):
 
 
     # call server command to deploy url
-    deploy_error = sc.deploy(context.get('url'), context.get('server_name'))
-    if deploy_error != None:
-        context['deployError'] = deploy_error
+    isError = False
+    try:
+        sc.deploy(context.get('url'), context.get('server_name'))
+    except sc.SCException as e:
+        isError = True
+        context['deployError'] = str(e)
+        
+    if isError:
         print 'return context:', context 
         print '<<<<<<<<\n'
         return context 
@@ -167,11 +172,13 @@ actions = {
         'hosts_status': hosts_status,
         'deploy': deploy,
         'end_conversation': end_conversation,
-        'service_status': get_service_status
+        'get_service_status': get_service_status
         }
 
 intent_actions = {
         'greet': 'greet',
         'hosts_status': 'hosts_status',
         'deploy': 'deploy',
+        'end_conversation': end_conversation,
+        'service_status': get_service_status
         }

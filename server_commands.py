@@ -15,6 +15,26 @@ hosts = [
 
 services = []
 
+class SCException(Exception):
+    def init(self, message, error=None):
+        Exception.__init__(self, message)
+        self.error = error
+
+class InvalidRepoException(SCException):
+    pass
+
+class InvalidServerNameException(SCException):
+    pass
+
+class ServerUnavailableException(SCException):
+    pass
+
+class SSHUnavailableException(SCException):
+    pass
+
+class GoGetException(SCException):
+    pass
+
 class SSH(object):
     def __init__(self, host=hosts[0]):
         self._host = host
@@ -63,11 +83,11 @@ def deploy(repo_url, server_name):
 
     # validate github repo
     if not check_github_repo(repo_url):
-        return "GitHub repo does not exist"
+        raise InvalidRepoException("GitHub repo does not exist")
 
     # validate server_name
     if not any([server_name in x for x in hosts]):
-        return "Server name does not exist"
+        raise InvalidServerName("Server name does not exist")
 
     # get correct server url
     for host in hosts:
@@ -77,21 +97,25 @@ def deploy(repo_url, server_name):
 
     # ping to check if host is alive
     if not ping(server_url):
-        return "That server does not exist." + \
-            " Here is the status of the servers." + get_hosts_status()
+        raise ServerUnavailableException(
+            "That server seems to be unavailable. " + \
+            "Here are the statuses of the servers." + get_hosts_status())
 
     # ssh to server
     try:
         ssh_client = SSH(host=server_url)
     except Exception as e:
-        return "There was a problem while contacting the server.\n" + str(e)
+        raise SSHUnavailableException(
+            "There was a problem contacting the server. Try another server. " + \
+            "Here are the statuses of the servers." + get_hosts_status())
 
     # run go get command
     cmd = 'go get -u {0}'.format(repo_url)
     exit_status = ssh_client.execute_exit_status(cmd)
     if exit_status != 0:
         ssh_client.close()
-        return 'go get error: exit_status = {0}'.format(exit_status)
+        raise GoGetException(
+            'go get error: exit_status = {0}'.format(exit_status))
 
     # create log folder
     log_path = '~/.netbot/' + repo_url
@@ -99,26 +123,32 @@ def deploy(repo_url, server_name):
     out, err = ssh_client.execute(cmd)
     if err != '':
         ssh_client.close()
-        return err
+        raise SCException("Error making log directory")
 
     # extract service name and run
     service_name = repo_url.split('/')[-1]
     cmd = '{0} > {1}/output.txt 2> {1}/error.txt &'.format(service_name, log_path)
-    out, err = ssh_client.execute(cmd)
+    try:
+        out, err = ssh_client.execute(cmd)
+    except Exception as e:
+        raise SCException("Could not start service: " + str(e), e)
     if err != '':
         ssh_client.close()
-        return err
+        raise SCException("Could not start service: " + err)
 
     # get process id
     cmd = 'pgrep ' + service_name
-    out, err = ssh_client.execute(cmd)
+    try:
+        out, err = ssh_client.execute(cmd)
+    except Exception as e:
+        raise SCException("Could not get process id: " + str(e), e)
     if err != '':
         ssh_client.close()
-        return err
+        raise SCException("Could not get process id: " + err)
     try:
         process_id = int(out.strip())
     except Exception as e:
-        return 'Error getting process ID'
+        raise SCException("Could not get process id: " + str(e), e)
 
     # add to services
     services.append({
