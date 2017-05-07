@@ -31,7 +31,7 @@ class SSH(object):
         chan = self._client.get_transport().open_session()
         chan.exec_command(self._pre_command + command)
         
-        return chan.recv_exit_status(), chan.recv_stderr(1e100)
+        return chan.recv_exit_status()#, chan.recv_stderr(1e100)
 
     def execute(self, command, need_output=True):
         ssh_stdin, ssh_stdout, ssh_stderr = self._client.exec_command(
