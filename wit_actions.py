@@ -75,6 +75,8 @@ def hosts_status(request):
 def deploy(request):
     context = request['context']
     entities = request['entities']
+    if not entities:
+        entities = {}
 
     print '>>>>>>>> deploy()'
     print 'context:', context 
@@ -83,6 +85,10 @@ def deploy(request):
     action = correct_action(context, entities, 'deploy')
     if action:
         return action(request)
+
+
+    # clear errors in context
+    context.pop('serverUnavailable', None)
 
     # check for url
     if not context.get('url'):
@@ -116,6 +122,10 @@ def deploy(request):
     isError = False
     try:
         sc.deploy(context.get('url'), context.get('server_name'))
+    except (sc.ServerUnavailableException, sc.SSHUnavailableException) as e:
+        isError = True
+        context['serverUnavailable'] = str(e)
+        context.pop('server_name', None)
     except sc.SCException as e:
         isError = True
         context['deployError'] = str(e)

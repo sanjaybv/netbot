@@ -98,7 +98,7 @@ def deploy(repo_url, server_name):
     # ping to check if host is alive
     if not ping(server_url):
         raise ServerUnavailableException(
-            "That server seems to be unavailable. " + \
+            "That server seems to be unavailable. Try another server. " + \
             "Here are the statuses of the servers." + get_hosts_status())
 
     # ssh to server
