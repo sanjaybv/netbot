@@ -148,14 +148,29 @@ def check_github_repo(repo_url):
     else:
         return True
 
+# check if the given pid is a running process
+def check_pid(pid):        
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    else:
+        return True
+
 def get_service_status(repo_url, server_name):
-    if ~ping(server_name):
+    if not ping(server_name):
         return "There's no server with that name"
 
     if not check_github_repo(repo_url):
         return "Github URL does not exist"
 
-
+    for ser in services:
+    	if ser['repo_url'] == repo_url and ser['server_name'] == server_name:
+    		if check_pid(ser['process_id']):
+    			return "Service is still running on {1}".format(server_name)
+    		else:
+    			return "Service is done executing"
+    		
 def main():
     ssh = SSH()
     print ssh.execute('ls')

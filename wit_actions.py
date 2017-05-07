@@ -138,15 +138,50 @@ def get_service_status(request):
     print 'context:', context 
     print 'entities:', entities
 
-    action = correct_action(context, entities, 'service_status')
-    if action:
-        return action(request)
+    # action = correct_action(context, entities, 'get_service_status')
+    # if action:
+    #     return action(request)
+    
+    # check for url
+    if not context.get('url'):
+        if not (entities.get('url') \
+            and first_entity(entities, 'url', 'confidence') > 0.8 \
+            and first_entity(entities, 'url', 'domain') == 'github.com'):
+            context['serviceStatusMissingURL'] = 'True'
+            print 'mu return context:', context 
+            print '<<<<<<<<\n'
+            return context
+        context.pop('serviceStatusMissingURL', None)
+        context['url'] = first_entity(
+                entities, 'url', 'value').split('|')[1][:-1]
+
+    # check for a server name
+    if not context.get('server_name'):
+        if not (entities.get('server_name') \
+                and first_entity(entities, 'server_name', 'confidence') > 0.8):
+            context['serviceStatusMissingServerName'] = 'True'
+            print 'msn return context:', context 
+            print '<<<<<<<<\n'
+            return context
+        context.pop('serviceStatusMissingServerName', None)
+        context['server_name'] = first_entity(entities, 'server_name', 'value')
+
+    serviceStatus = sc.get_service_status(context.get('url'), context.get('server_name'))
+    
+    if serviceStatus != None:
+        context['serviceStatus'] = serviceStatus
+        print 'return context:', context 
+        print '<<<<<<<<\n'
+        return context 
+
+
+    context[''] = 'True'
+    context.pop('url')
+    context.pop('server_name')
     
     print 'return context:', context 
     print '<<<<<<<<\n'
     return context
-
-    pass
 
 def end_conversation(request):
     context = request['context']
@@ -168,11 +203,12 @@ actions = {
         'hosts_status': hosts_status,
         'deploy': deploy,
         'end_conversation': end_conversation,
-        'service_status': get_service_status
+        'get_service_status': get_service_status
         }
 
 intent_actions = {
         'greet': 'greet',
         'hosts_status': 'hosts_status',
         'deploy': 'deploy',
+        'get_service_status': 'get_service_status'
         }
