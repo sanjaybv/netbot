@@ -18,7 +18,8 @@ class SSH(object):
         self._host = host
         self._client = paramiko.SSHClient()
         self._username = 'sv453'
-        self._password = os.environ['SSH_PASSWORD']
+        # self._password = os.environ['SSH_PASSWORD']
+        self._password = 'S@nju123456'
         self._pre_command = '. ~/.profile;'
 
         self._client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -174,6 +175,20 @@ def get_service_status(repo_url, server_name):
 
 	for ser in services:
 		if ser['repo_url'] == repo_url and ser['server_name'] == server_name:
+
+			# get contents of error.txt
+			error_file_path = ser['log_path'] + '/error.txt'
+			cmd = 'ls -s {0}'.format(error_file_path)
+			stdin, stdout, stderr = ssh_client.exec_command(cmd)
+			print stdout
+			
+			# exit_status = ssh_client.execute_exit_status(cmd)
+			# if exit_status != 0:
+			# 	ssh_client.close()
+			# 	return 'cat error: exit_status = {0}'.format(exit_status)
+			# else:
+			# 	return 'cat error: exit_status = {0}'.format(exit_status)
+
 			cmd = 'ps -p {1}'.format(ser['process_id'])
 			exit_status = ssh_client.execute_exit_status(cmd)
 			if exit_status != 0:
