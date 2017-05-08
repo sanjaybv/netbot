@@ -317,6 +317,25 @@ def get_all_service_status():
         statuses.append('There are no services running at this time.')
     return '\n'.join(statuses)
 
+def clear_completed_services():
+
+    new_services = []
+    for i, service in enumerate(services):
+    
+        ssh_client = SSH(host=service['server_url'])
+        
+        pid = service['process_id']
+        exit_status = ssh_client.execute_exit_status(
+                        'ps -p {0}'.format(pid))
+
+        if not exit_status:
+            new_services.append(service)
+
+        ssh_client.close()
+             
+    global services
+    services = new_services
+    pickle.dump(services, open('services.pkl', 'wb'))
 
 def get_service_status(repo_url, server_name):
 

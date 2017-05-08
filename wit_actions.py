@@ -225,6 +225,28 @@ def get_service_status(request):
     print '<<<<<<<<\n'
     return context
 
+def clear_services(request):
+    context = request['context']
+    entities = request['entities']
+
+    print '>>>>>>>> clear_services()'
+    print 'context:', context 
+    print 'entities:', entities 
+
+    action = correct_action(context, entities, 'clear_services')
+    if action:
+        return action(request)
+
+    try:
+        sc.clear_completed_services()
+        context['cleared_services'] = True
+    except Exception as e:
+        context['clear_services_error'] = str(e)
+
+    print 'return context:', context 
+    print '<<<<<<<<\n'
+    return context
+
 '''
 def get_service_status(request):
     context = request['context']
@@ -302,7 +324,8 @@ actions = {
         'deploy': deploy,
         'stop': stop,
         'end_conversation': end_conversation,
-        'get_service_status': get_service_status
+        'get_service_status': get_service_status,
+        'clear_services': clear_services,
         }
 
 intent_actions = {
@@ -312,4 +335,5 @@ intent_actions = {
         'end_conversation': 'end_conversation',
         'service_status': 'get_service_status',
         'stop':'stop',
+        'clear_services':'clear_services',
         }
