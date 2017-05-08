@@ -4,6 +4,7 @@ from os import system as system_call
 import paramiko
 import urllib2
 import requests
+import pickle
 
 hosts = [
         'pascal.cs.rutgers.edu',
@@ -14,6 +15,13 @@ hosts = [
         ]
 
 services = []
+
+try:
+    services_file = pickle.load(open('services.pkl', 'rb'))
+    if services_file:
+        services = services_file
+except:
+    pass
 
 class SCException(Exception):
     def init(self, message, error=None):
@@ -157,10 +165,77 @@ def deploy(repo_url, server_name):
         'server_name': server_name,
         'process_id': process_id,
         'log_path': log_path,
+        'server_url': server_url,
         })
+
+    pickle.dump(services, open('services.pkl', 'wb'))
 
     ssh_client.close()
     return None
+
+def stop(repo_url, server_name):
+    '''
+    Steps to stop
+    1. Validate url
+    2. Validate server_name and translate
+    3. Check services and get pid(s)
+    4. SSH and check for each pid if pid is running
+        - if yes, then stop it
+        - else, say it was not executing
+    '''
+
+    # validate github repo
+    if not check_github_repo(repo_url):
+        raise InvalidRepoException("GitHub repo does not exist")
+
+    # validate server_name
+    if not any([server_name in x for x in hosts]):
+        raise InvalidServerName("Server name does not exist")
+
+    # get correct server url
+    for host in hosts:
+        if server_name in host:
+            server_url = host
+            break
+
+    # ping to check if host is alive
+    if not ping(server_url):
+        raise ServerUnavailableException(
+            "That server seems to be unavailable. Try another server. " + \
+            "Here are the statuses of the servers." + get_hosts_status())
+
+    # loop through services
+    stopped_pids = []
+    already_stopped_pids = []
+    ssh_client = SSH(host=server_url)
+    for service in services:
+        if service['repo_url'] == repo_url \
+            and service['server_url'] == server_url:
+
+            pid = service['process_id']
+            exit_status = ssh_client.execute_exit_status(
+                            'ps -p {0}'.format(pid))
+            if exit_status:
+                already_stopped_pids.append(str(pid))
+            else:
+                exit_status = ssh_client.execute_exit_status(
+                                'kill -9 {0}'.format(pid))
+                stopped_pids.append(str(pid))
+
+    status = ''
+    if already_stopped_pids:
+        status += 'These pids were already stopped: ' + \
+                    ', '.join(already_stopped_pids) + '\n'
+    if stopped_pids:
+        status += 'These pids were stopped: ' + \
+                    ', '.join(stopped_pids) + '\n'
+
+    if status == '':
+        status += 'No such services were running.\n'
+                
+    ssh_client.close()
+    return status
+
 
 def get_hosts_status():
     statuses = []
@@ -220,8 +295,10 @@ def get_service_status(repo_url, server_name):
 			error_file_path = ser['log_path'] + '/error.txt'
 			cmd = 'ls -s {0}'.format(error_file_path)
 			stdout, stderr = ssh_client.execute(cmd)
+			print '******'
+			print stdout, stderr
 			
-			so = list(stdout.partition())
+			so = list(stdout.partition(' '))
 			if so[0] == '0':
 				flag = 1
 			else:
@@ -249,7 +326,7 @@ def get_service_status(repo_url, server_name):
 			# else:
 				# 	return "Service is done executing"
     		
-    		ssh_client.close()
+    	ssh_client.close()
 
 def main():
     ssh = SSH()
