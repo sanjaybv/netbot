@@ -272,6 +272,52 @@ def check_pid(pid):
     else:
         return True
 
+def get_all_service_status():
+    '''
+    Steps
+    1. For each service
+        - ssh to server
+        - check pid is running
+        - check if error.txt is empty
+        - send message based on it
+    '''
+
+    statuses = []
+    for service in services:
+        ssh_client = SSH(host=service['server_url'])
+
+        pid = service['process_id']
+        exit_status = ssh_client.execute_exit_status(
+                        'ps -p {0}'.format(pid))
+        if exit_status:
+            statuses.append('{0} - {1} - {2} - {3}'.format(
+                service['repo_url'],
+                service['server_name'],
+                service['process_id'],
+                'Service is not running anymore.'))
+
+        else:
+            statuses.append('{0} - {1} - {2} - {3}'.format(
+                service['repo_url'],
+                service['server_name'],
+                service['process_id'],
+                'Service is running.'))
+
+        std_out, _ = ssh_client.execute('cat {0}'.format(
+                        service['log_path'] + '/error.txt'))
+
+        if std_out:
+            statuses[-1] += ' There were some errors. \n```' + std_out + '```'
+        else:
+            statuses[-1] += ''
+
+        ssh_client.close()
+
+    if not statuses:
+        statuses.append('There are no services running at this time.')
+    return '\n'.join(statuses)
+
+
 def get_service_status(repo_url, server_name):
 
 	error_file_out = ""

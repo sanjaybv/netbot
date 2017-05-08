@@ -202,6 +202,30 @@ def stop(request):
     print '<<<<<<<<\n'
     return context
 
+
+def get_service_status(request):
+    context = request['context']
+    entities = request['entities']
+
+    print '>>>>>>>> get_service_status()'
+    print 'context:', context 
+    print 'entities:', entities 
+
+    action = correct_action(context, entities, 'service_status')
+    if action:
+        return action(request)
+
+    try:
+        statuses = sc.get_all_service_status()
+        context['serviceStatus'] = statuses
+    except Exception as e:
+        context['serviceStatus'] = str(e)
+
+    print 'return context:', context 
+    print '<<<<<<<<\n'
+    return context
+
+'''
 def get_service_status(request):
     context = request['context']
     entities = request['entities']
@@ -255,6 +279,7 @@ def get_service_status(request):
     print 'return context:', context 
     print '<<<<<<<<\n'
     return context
+'''
 
 def end_conversation(request):
     context = request['context']
