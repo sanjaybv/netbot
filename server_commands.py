@@ -1,5 +1,6 @@
 import os
 from os import system as system_call
+import uuid
 
 import paramiko
 import urllib2
@@ -65,13 +66,20 @@ class SSH(object):
         
         return chan.recv_exit_status()#, chan.recv_stderr(1e100)
 
-    def execute(self, command, need_output=True):
-        ssh_stdin, ssh_stdout, ssh_stderr = self._client.exec_command(
-                            self._pre_command + command)
-        print '$ {0}'.format(command)
+    def execute(self, command, need_output=True, need_pid=False):
+        chan = self._client.get_transport().open_session()
+        if need_pid:
+            ssh_stdin, ssh_stdout, ssh_stderr = self._client.exec_command(
+                                self._pre_command + command + 'echo $!')
+            self.last_pid = int(ssh_stdout.readline())
+            print str(self.last_pid) + '$ {0}'.format(command)
+        else:
+            ssh_stdin, ssh_stdout, ssh_stderr = self._client.exec_command(
+                                self._pre_command + command)
+            print '$ {0}'.format(command)
         if need_output:
             out, err = ssh_stdout.read(), ssh_stderr.read()
-            print '{0} \n--\n {1}'.format(command, out, err)
+            print 'stdout\n-----\n{0}\nstderr\n-----\n{1}'.format(out, err)
             return out, err
         return None, None
 
@@ -127,7 +135,8 @@ def deploy(repo_url, server_name):
             'go get error: exit_status = {0}'.format(exit_status))
 
     # create log folder
-    log_path = '~/.netbot/' + repo_url
+    log_path = '~/.netbot'
+    log_path = os.path.join(log_path, str(uuid.uuid4()))
     cmd = 'mkdir -p ' + log_path
     out, err = ssh_client.execute(cmd)
     if err != '':
@@ -136,19 +145,23 @@ def deploy(repo_url, server_name):
 
     # extract service name and run
     service_name = repo_url.split('/')[-1]
-    cmd = '{0} > {1}/output.txt 2> {1}/error.txt &'.format(service_name, log_path)
+    cmd = '{0} > {1} 2> {2} &'.format(
+            service_name, 
+            os.path.join(log_path, 'output.txt'),
+            os.path.join(log_path, 'error.txt'))
     try:
-        out, err = ssh_client.execute(cmd)
+        ssh_client.execute(cmd, need_output=False, need_pid=True)
     except Exception as e:
         raise SCException("Could not start service: " + str(e), e)
-    if err != '':
-        ssh_client.close()
-        raise SCException("Could not start service: " + err)
 
     # get process id
+    process_id = ssh_client.last_pid
+    '''
     cmd = 'echo $!'
     try:
         out, err = ssh_client.execute(cmd)
+        print '****'
+        print out
     except Exception as e:
         raise SCException("Could not get process id: " + str(e), e)
     if err != '':
@@ -158,6 +171,7 @@ def deploy(repo_url, server_name):
         process_id = int(out.strip())
     except Exception as e:
         raise SCException("Could not get process id: " + str(e), e)
+    '''
 
     # add to services
     services.append({
@@ -303,13 +317,16 @@ def get_all_service_status():
                 service['process_id'],
                 'Service is running.'))
 
-        std_out, _ = ssh_client.execute('cat {0}'.format(
-                        service['log_path'] + '/error.txt'))
+        error, _ = ssh_client.execute('cat {0}'.format(
+                        os.path.join(service['log_path'], 'error.txt')))
+        if error:
+            statuses[-1] += ' There were some errors. \n```' + error + '```'
 
-        if std_out:
-            statuses[-1] += ' There were some errors. \n```' + std_out + '```'
-        else:
-            statuses[-1] += ''
+        output, _ = ssh_client.execute('cat {0}'.format(
+                        os.path.join(service['log_path'], 'output.txt')))
+        if output:
+            statuses[-1] += '\n Here is its output from stdout. \n```' + \
+                                output + '```'
 
         ssh_client.close()
 
@@ -340,7 +357,8 @@ def clear_completed_services():
 
 def main():
     ssh = SSH()
-    print ssh.execute('ls')
+    print ssh.execute('netbot-hello & echo $!', need_output=False)
+    print ssh.last_pid
     ssh.close()
 
 if __name__ == '__main__':
