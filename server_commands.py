@@ -146,7 +146,7 @@ def deploy(repo_url, server_name):
         raise SCException("Could not start service: " + err)
 
     # get process id
-    cmd = 'pgrep ' + service_name
+    cmd = 'echo $!'
     try:
         out, err = ssh_client.execute(cmd)
     except Exception as e:
