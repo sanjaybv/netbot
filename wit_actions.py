@@ -89,6 +89,7 @@ def deploy(request):
 
     # clear errors in context
     context.pop('serverUnavailable', None)
+    context.pop('invalidRepo', None)
 
     # check for url
     if not context.get('url'):
@@ -122,6 +123,10 @@ def deploy(request):
     isError = False
     try:
         sc.deploy(context.get('url'), context.get('server_name'))
+    except sc.InvalidRepoException as e:
+        isError = True
+        context['invalidRepo'] = True
+        context.pop('url', None)
     except (sc.ServerUnavailableException, sc.SSHUnavailableException) as e:
         isError = True
         context['serverUnavailable'] = str(e)
