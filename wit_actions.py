@@ -154,6 +154,10 @@ def stop(request):
     print 'context:', context 
     print 'entities:', entities 
 
+    # clear invalid key in context
+    context.pop('stopServerUnavailable', None)
+    context.pop('stopInvalidRepo', None)
+
     action = correct_action(context, entities, 'stop')
     if action:
         return action(request)
@@ -189,6 +193,14 @@ def stop(request):
     isError = False
     try:
         stop_status = sc.stop(context.get('url'), context.get('server_name'))
+    except sc.InvalidRepoException as e:
+        isError = True
+        context['stopInvalidRepo'] = True
+        context.pop('url', None)
+    except (sc.ServerUnavailableException, sc.SSHUnavailableException) as e:
+        isError = True
+        context['stopServerUnavailable'] = str(e)
+        context.pop('server_name', None)
     except sc.SCException as e:
         isError = True
         context['stopError'] = str(e)

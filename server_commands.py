@@ -318,6 +318,7 @@ def get_all_service_status():
     return '\n'.join(statuses)
 
 def clear_completed_services():
+    global services
 
     new_services = []
     for i, service in enumerate(services):
@@ -333,65 +334,9 @@ def clear_completed_services():
 
         ssh_client.close()
              
-    global services
     services = new_services
     pickle.dump(services, open('services.pkl', 'wb'))
 
-def get_service_status(repo_url, server_name):
-
-	error_file_out = ""
-	for host in hosts:
-		if server_name in host:
-			server_url = host
-			break
-
-	if not ping(server_url):
-		return "There's no server with that name"
-
-	if not check_github_repo(repo_url):
-		return "Github URL does not exist"
-
-	ssh_client = SSH(host=server_url)
-
-	for ser in services:
-		if ser['repo_url'] == repo_url and ser['server_name'] == server_name:
-
-			# get contents of error.txt
-			error_file_path = ser['log_path'] + '/error.txt'
-			cmd = 'ls -s {0}'.format(error_file_path)
-			stdout, stderr = ssh_client.execute(cmd)
-			print '******'
-			print stdout, stderr
-			
-			so = list(stdout.partition(' '))
-			if so[0] == '0':
-				flag = 1
-			else:
-				flag = 0
-				cmd = 'cat {0}'.format(error_file_path)
-				error_file_out, error_file_err = ssh_client.execute(cmd)	
-			# 	ssh_client.close()
-			# 	return 'cat error: exit_status = {0}'.format(exit_status)
-			# else:
-			# 	return 'cat error: exit_status = {0}'.format(exit_status)
-
-			cmd = 'ps -p {0}'.format(ser['process_id'])
-			exit_status = ssh_client.execute_exit_status(cmd)
-			if exit_status != 0 and flag == 1:
-				# ssh_client.close()
-				return 'Service with process_id {0} is done executing'.format(ser['process_id'])
-			elif exit_status != 0 and flag == 0:
-				return 'Service with process_id {0} is done executing. Errors found : {1}'.format(ser['process_id'], error_file_out)
-			elif exit_status == 0 and flag == 1:
-				return "Service with process_id {0} is still running on {1}".format(ser['process_id'], server_name)
-			else:
-				return "Service with process_id {0} stopped with errors : {1}".format(ser['process_id'], error_file_out)
-			# if check_pid(ser['process_id']):
-				# 	return "Service is still running on {1}".format(server_name)
-			# else:
-				# 	return "Service is done executing"
-    		
-    	ssh_client.close()
 
 def main():
     ssh = SSH()
