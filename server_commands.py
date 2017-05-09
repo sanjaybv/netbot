@@ -185,7 +185,11 @@ def deploy(repo_url, server_name):
     pickle.dump(services, open('services.pkl', 'wb'))
 
     ssh_client.close()
-    return None
+    return '{0} was deployed on *{1}* with the process id of *{2}*.'.format(
+            repo_url,
+            server_name,
+            process_id,
+            )
 
 def stop(repo_url, server_name):
     '''
@@ -238,11 +242,12 @@ def stop(repo_url, server_name):
 
     status = ''
     if already_stopped_pids:
-        status += 'These pids were already stopped: ' + \
-                    ', '.join(already_stopped_pids) + '\n'
+        status += 'The services with these process ID(s) ' + \
+                    'were already stopped: *' + \
+                    ', '.join(already_stopped_pids) + '*\n'
     if stopped_pids:
-        status += 'These pids were stopped: ' + \
-                    ', '.join(stopped_pids) + '\n'
+        status += 'The services with these process ID(s) were stopped: *' + \
+                    ', '.join(stopped_pids) + '*\n'
 
     if status == '':
         status += 'No such services were running.\n'
@@ -304,14 +309,14 @@ def get_all_service_status():
         exit_status = ssh_client.execute_exit_status(
                         'ps -p {0}'.format(pid))
         if exit_status:
-            statuses.append('{0} - {1} - {2} - {3}'.format(
+            statuses.append('{0} - *{1}* - *{2}* - {3}'.format(
                 service['repo_url'],
                 service['server_name'],
                 service['process_id'],
                 'Service is not running anymore.'))
 
         else:
-            statuses.append('{0} - {1} - {2} - {3}'.format(
+            statuses.append('{0} - *{1}* - *{2}* - {3}'.format(
                 service['repo_url'],
                 service['server_name'],
                 service['process_id'],

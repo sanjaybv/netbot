@@ -122,7 +122,7 @@ def deploy(request):
     # call server command to deploy url
     isError = False
     try:
-        sc.deploy(context.get('url'), context.get('server_name'))
+        deployed_message = sc.deploy(context.get('url'), context.get('server_name'))
     except sc.InvalidRepoException as e:
         isError = True
         context['invalidRepo'] = True
@@ -141,7 +141,7 @@ def deploy(request):
         return context 
 
 
-    context['deployed'] = True
+    context['deployed'] = deployed_message
     context.pop('url')
     context.pop('server_name')
 
