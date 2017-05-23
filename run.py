@@ -25,7 +25,7 @@ def main():
     @wit_actions.register
     def send(message):
         if bot._client:
-            bot._client.send_message(channel='general', message=message)
+            bot._client.send_message(channel='random', message=message)
 
     bot.run()
 
