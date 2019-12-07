@@ -49,8 +49,7 @@ class SSH(object):
         self._host = host
         self._client = paramiko.SSHClient()
         self._username = 'sv453'
-        # self._password = os.environ['SSH_PASSWORD']
-        self._password = 'S@nju123456'
+        self._password = os.environ['SSH_PASSWORD']
         self._pre_command = '. ~/.profile;'
 
         self._client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
